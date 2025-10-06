@@ -107,13 +107,21 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
  We’ll prepare a cube later; the hands are ready to interact.
 
 ⬜ **4.5** **Reticle prefab**
+
  **Hierarchy:** 3D Object → **Torus** → rename **`ReticleRing`**
+ 
  **Transform:** **Scale (0.05,0.05,0.05)**
+ 
  **Material:** `Assets/Materials/M_Reticle_Unlit` (URP/Lit, Base=white, **Emission ON**) → assign
+ 
  **Project:** drag **ReticleRing** to **Assets/Prefabs** → **delete from scene**
+ 
  **Assign to rays:**
+ 
  - Select each **Controller Ray Interactor** (Left & Right) → if it exposes a **Reticle/Visual** slot, **drag `Prefabs/ReticleRing`** there.
+ 
  (If your component uses a child “Ray Visual” script, add it and assign the prefab as its reticle.)
+ 
 
 > Result: both hands have **far-ray** + **near-grab** capability.
 
