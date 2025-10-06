@@ -447,13 +447,18 @@ Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to C
 ## 4) Make the Grid container (3×3) <span style="color:purple;">🟣</span>
 
 ⬜ **4.1** **Hierarchy:** Right-click **`BoardCanvas`** → **Create Empty** → rename **`Grid`**
+
 ⬜ **4.2** **Inspector (Grid → RectTransform):**
 
 * **Anchor Preset = Stretch (full)**
+  
 * **Left/Right/Top/Bottom = 40** *(~4–5 cm margin inside the board)*
-  ⬜ **4.3** **Inspector (Grid):** **Add Component → Grid Layout Group**
+
+⬜ **4.3** **Inspector (Grid):** 
+**Add Component → Grid Layout Group**
 * **Constraint = Fixed Column Count**
 * **Constraint Count = 3**
+  
 * **Cell Size = (0.22, 0.22)** *(meters)*
 * **Spacing = (0.02, 0.02)**
 * **Child Alignment = Middle Center**
