@@ -35,7 +35,9 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
 ## 1) New Scene & Clean Stage <span style="color:purple;">🟣</span>
 
 ⬜ **1.1** **File → New Scene** → **Save As** `Assets/_Scenes/S09_TicTacToe.unity`
+
 ⬜ **1.2** **Hierarchy:** select **Main Camera** → **Delete**
+
 ⬜ **1.3** Keep **Directional Light**; set **Intensity ≈ 0.9**, **Soft Shadows = ON**
 
 ---
