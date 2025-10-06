@@ -45,12 +45,16 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
 ## 2) Base Rig (modern): `OVRCameraRig` + `OVRManager` <span style="color:purple;">🟣</span>
 
 ⬜ **2.1** **Project (Search):** `OVRCameraRig`
+
  **Drag** **OVRCameraRig** to **Hierarchy (root)** — **rename** **`PlayerRig`** *(optional, clear name; still not “XR”)*
 
 ⬜ **2.2** **Create an app settings holder**
  **Hierarchy:** Right-click → **Create Empty** → **rename `AppSettings`** (at root)
+ 
  **Inspector (AppSettings):** **Add Component → OVRManager**
+ 
  *(Some AIO versions put OVRManager elsewhere; having it once in the scene is enough.)*
+ 
 
 > You now have tracked camera anchors under `PlayerRig/TrackingSpace` (Left/Right/Center).
 
@@ -64,9 +68,13 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
  **Drag** it **as a child of** **`PlayerRig`** (keep local transform zeroed)
 
 ⬜ **3.2** **Project (Search):** `OVRController`
+
  **Drag** it **under** `PlayerRig/OVRInteraction`
+ 
  • This prefab (or its variant) spawns/hosts **Left/Right controller** objects and commonly includes **ControllerInteractors** children.
+ 
  • If your AIO version splits Left/Right into two prefabs, add both under **OVRInteraction**.
+ 
 
 > If your version doesn’t provide these prefabs, you can still add interactors manually in Step 4 — the rest of the flow stays the same.
 
@@ -78,13 +86,19 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
 
 ⬜ **4.1** **Hierarchy path (Left hand):**
 `PlayerRig/TrackingSpace/LeftHandAnchor`
- • If you see a child like **`ControllerInteractors`**, select it; else: Right-click **LeftHandAnchor → Create Empty → rename `ControllerInteractors`** (reset local transform).
+
+ • If you see a child like **`ControllerInteractors`**, select it;
+ else: Right-click **LeftHandAnchor → Create Empty → rename `ControllerInteractors`** (reset local transform).
 
 ⬜ **4.2** **Add/Verify components on the Left `ControllerInteractors`:**
  **Add Component → Controller Ray Interactor**
+ 
   – **Max Ray Length = 6**
+  
   – **Hide When No Interactable = ON** (optional)
+  
   – We’ll assign a **reticle** in step 4.5
+  
  **Add Component → Grab Interactor** *(near-grab)*
 
 ⬜ **4.3** Repeat **4.1–4.2** for **RightHandAnchor**.
