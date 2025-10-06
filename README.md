@@ -397,7 +397,9 @@ Directional Light
 ⬜ **1.2** **Inspector (Wall → Transform):**
 
 * **Position:** (0, **1.5**, **2.2**)
+  
 * **Rotation:** (0, 0, 0)
+  
 * **Scale:** (**3**, **2**, **0.08**)
 
 > Result: a flat wall ~3 m wide × 2 m tall in front of the player.
@@ -407,16 +409,21 @@ Directional Light
 ## 2) Create the Board Canvas (World Space, modern UI path) <span style="color:purple;">🟣</span>
 
 ⬜ **2.1** **Hierarchy:** Right-click **`Wall`** → **UI → Canvas** → rename **`BoardCanvas`**
+
 ⬜ **2.2** **Inspector (BoardCanvas → Canvas):** **Render Mode = World Space**
+
 ⬜ **2.3** **Inspector (BoardCanvas → RectTransform):**
 
 * **Position:** (0, **1.3**, **-0.045**) *(a few cm in front of the wall; local Z is negative toward you)*
+  
 * **Size:** **Width = 0.8**, **Height = 0.8** *(meters)*
+  
 * **Scale:** (1, 1, 1)
 
 ### 2A) Run the Interaction SDK canvas wizard (critical)
 
-⬜ **2.4** **Hierarchy:** Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to Canvas** → click **Fix** (adds **Pointable Canvas Module** on the **EventSystem**) → **Create** (adds any helpers). ([Meta for Developers][1])
+⬜ **2.4** **Hierarchy:** 
+Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to Canvas** → click **Fix** (adds **Pointable Canvas Module** on the **EventSystem**) → **Create** (adds any helpers). ([Meta for Developers][1])
 
 > This is the **modern** pipeline for ray-cast UI with the Interaction SDK (you don’t add `OVR Input Module` or `OVR Raycaster` for this flow). ([Meta for Developers][3])
 
@@ -427,9 +434,11 @@ Directional Light
 ## 3) Add a subtle board background (Panel) <span style="color:purple;">🟣</span>
 
 ⬜ **3.1** **Hierarchy:** Right-click **`BoardCanvas`** → **UI → Panel** → rename **`BoardPanel`**
+
 ⬜ **3.2** **Inspector (BoardPanel → RectTransform):**
 
 * **Anchor Preset = Stretch (full)**
+  
 * **Left/Right/Top/Bottom = 0**
   ⬜ **3.3** **Inspector (Image):** **Color =** light gray (≈ #D9D9D9, Alpha ~ 200/255)
 
@@ -571,7 +580,7 @@ Directional Light
 
 ---
 
-## ✅ End of Part 2/6 — submit
+## ✅ End of Part 2 — submit
 
 * Screenshot: **`BoardCanvas`** Inspector (**Render Mode = World Space**; confirm you ran the wizard).
 * Screenshot: **`Grid`** with **Grid Layout Group** values.
