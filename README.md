@@ -132,8 +132,11 @@ You will use: **Build Settings**, **Project Settings**, **Package Manager**, **H
 > We won’t use the legacy `OVRPlayerController`. We’ll add a **CharacterController** to `PlayerRig` and drive it with a small, clear script using **OVRInput** sticks.
 
 ⬜ **5.1** **Hierarchy:** select **`PlayerRig`**
+
  **Inspector:** **Add Component → Character Controller**
+ 
  – **Height = 1.7**, **Radius = 0.3**, **Center Y ≈ 0.85**
+ 
  (Adjust later if your head starts in the ceiling.)
 
 ⬜ **5.2** **Project:** `Assets/Scripts/SimpleRigLocomotion.cs`
@@ -210,21 +213,31 @@ public class SimpleRigLocomotion : MonoBehaviour
 > We’ll use the **Interaction SDK** canvas wizard so the **EventSystem** gets the **Pointable Canvas Module** automatically (modern pipeline).
 
 ⬜ **6.1** **Hierarchy:** Right-click → **UI → Canvas** → rename **`TestCanvas`**
+
  **Inspector (Canvas):** **Render Mode = World Space**
+ 
  **RectTransform:** **Position (0,1.5,1.5)** • **Size (0.6,0.3)** (meters) • **Scale (1,1,1)**
+ 
 
 ⬜ **6.2** **Run the wizard on the canvas**
+
  **Hierarchy:** Right-click **`TestCanvas`** → **Interaction SDK → Add Ray Interaction to Canvas**
+ 
  Follow prompts → **Fix** (adds **Pointable Canvas Module** to EventSystem) → **Create** (adds any required helpers).
+ 
 
 > You should now have exactly one **EventSystem** in the scene with **Pointable Canvas Module** (modern), not OVR Input Module.
 
 ⬜ **6.3** **Button (TMP)**
  **TestCanvas** → **UI → Button (TextMeshPro)** → rename **`TestButton`**
+ 
  **Button → Transition = Color Tint** (brighter Highlighted)
+ 
  **Child `Text (TMP)` → “CLICK ME”**, **Font Size 48–72**, **Alignment Center**
+ 
 
 ⬜ **6.4** **Click probe**
+
  **Project:** `Assets/Scripts/UIButtonDebug.cs`
 
 ```csharp
@@ -246,9 +259,11 @@ public class UIButtonDebug : MonoBehaviour
 ## 7) Minimal Room <span style="color:purple;">🟣</span>
 
 ⬜ **7.1** **Ground**
+
  3D Object → **Plane** → rename **`Ground`** → **Scale (4,1,4)**
 
 ⬜ **7.2** **Wall**
+
  3D Object → **Cube** → rename **`Wall`** → **Position (0,1.5,2.2)** • **Scale (3,2,0.08)**
 
 ---
@@ -256,22 +271,35 @@ public class UIButtonDebug : MonoBehaviour
 ## 8) Grabbable test cube (manual or wizard) <span style="color:purple;">🟣</span>
 
 ⬜ **8.1** **Hierarchy:** 3D Object → **Cube** → rename **`GrabCube`**
+
  **Transform:** **Scale (0.2,0.2,0.2)**, **Position (0,0.5,1.8)**
+ 
 
 **Manual setup (transparent & explicit):**
 ⬜ **8.2** **Inspector (GrabCube):**
+
  • **Add Component → Rigidbody** (Use Gravity ON, Interpolate ON)
+ 
  • **Add Component → Grabbable** → **Rigidbody:** drag this cube’s **Rigidbody**
+ 
  • **Add Component → ColliderSurface** → **Collider:** drag this cube’s **BoxCollider**
+ 
  • **Add Component → RayInteractable** →
+ 
   – **Pointable Element = Grabbable**
+  
   – **Surface = ColliderSurface**
+  
  • **Add Component → MoveTowardsTargetProvider**
+ 
   – In **RayInteractable → Movement Provider:** assign this provider
 
 **Wizard alternative (faster):**
+
 ⬜ **8.3** Right-click **GrabCube** → **Interaction SDK → Add Ray Grab Interaction**
+
  • Wizard creates a **parent host** (e.g., `ISDK Ray Grab Interaction`) and moves your cube under it.
+ 
  • Edit settings on the **parent** (that’s the interactable host).
 
 ---
@@ -336,7 +364,7 @@ Directional Light
 
 ---
 
-## ✅ End of Part 1/6 — what to submit
+## ✅ End of Part 1 — what to submit
 
 * Screenshot: **PlayerRig** with **CharacterController** + **SimpleRigLocomotion** (Camera Eye assigned).
 * Screenshot: **Left/Right** `ControllerInteractors` showing **Ray Interactor** + **Grab Interactor** (and Reticle if exposed).
