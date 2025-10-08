@@ -29,12 +29,12 @@
 ### 1) Create the project (URP)
 
 1. **Unity Hub** → **New → 3D (URP)** → name **`VR_TicTacToe_Lab`** → Create.
-   *URP is the most stable/performant baseline on Quest.* ([Meta for Developers][1])
+   *URP is the most stable/performant baseline on Quest.*   
 
 ### 2) Switch platform & compression (Android + ASTC)
 
 1. **File → Build Settings…** → **Android** → **Switch Platform**.
-   *Quest runs Android; do this early to avoid massive reimports later.* ([Meta for Developers][1])
+   *Quest runs Android; do this early to avoid massive reimports later.*   
 2. Same dialog → **Texture Compression = ASTC**.
    *Best quality/memory tradeoff for mobile VR.*
 
@@ -48,7 +48,7 @@ Open **Edit → Project Settings… → Player → Other Settings**:
 * **Target Architectures**: **ARM64** (only)
 * **Minimum API Level**: **Android 10 (API 29)** or higher
 * **Graphics APIs** (Android): **Vulkan** (remove GLES3 unless you need it)
-  *These match current Quest/Unity requirements and typical store checks.* ([Meta for Developers][1])
+  *These match current Quest/Unity requirements and typical store checks.*   
 
 ### 4) Install XR + Meta packages (OpenXR path)
 
@@ -57,24 +57,24 @@ Open **Window → Package Manager**:
 * Install **XR Plug-in Management** (if not installed).
 * Install **OpenXR Plug-in** (Unity).
 * Install **Meta XR All-in-One SDK (AIO)** (UPM).
-  *AIO wraps the latest Meta XR SDKs in one package.* ([Meta for Developers][4])
+  *AIO wraps the latest Meta XR SDKs in one package.*  
 
-> **Heads-up for educators:** If students see “Oculus XR Plug-in”, clarify we’re standardizing on **OpenXR** for Unity 6.2; Meta provides **Unity OpenXR: Meta** support and extensions via OpenXR. ([Unity Documentation][5])
+> **Heads-up for educators:** If students see “Oculus XR Plug-in”, clarify we’re standardizing on **OpenXR** for Unity 6.2; Meta provides **Unity OpenXR: Meta** support and extensions via OpenXR.   
 
 ### 5) Enable OpenXR + Meta Quest support
 
 Open **Edit → Project Settings… → XR Plug-in Management → Android**:
 
 * **Check “OpenXR”**.
-* Click **OpenXR** (left pane) → in **Features** enable **Meta / Meta Quest Support** (wording can vary by version; look for Meta-branded OpenXR support). ([Unity Documentation][5])
+* Click **OpenXR** (left pane) → in **Features** enable **Meta / Meta Quest Support** (wording can vary by version; look for Meta-branded OpenXR support).   
 
-> **Quick verify:** In **Package Manager**, you should also see **“Unity OpenXR: Meta”** (com.unity.xr.meta-openxr) listed/installed or pulled as a dependency. ([Unity Documentation][5])
+> **Quick verify:** In **Package Manager**, you should also see **“Unity OpenXR: Meta”** (com.unity.xr.meta-openxr) listed/installed or pulled as a dependency.   
 
 ### 6) Run Meta XR Project Setup / Validation (auto-fix)
 
 1. **Meta XR → Project Setup** (or **Project Settings → Meta XR → Launch Project Setup Tool**).
 2. Press **Fix All** until green.
-   *This tool applies required flags, permissions, input backends, etc., for Meta Quest targets.* ([Meta for Developers][2])
+   *This tool applies required flags, permissions, input backends, etc., for Meta Quest targets.*   
 
 ### 7) URP performance baseline (mobile VR-safe)
 
@@ -90,7 +90,7 @@ Find your **URP Asset** (Project search: `*UniversalRenderPipelineAsset*`) and *
   * **Post-processing = OFF** (we’ll add selectively later)
   * **Transparent Receive Shadows = OFF**
   * **Renderer Features** = empty for now
-    *These settings avoid common mobile bottlenecks; adjust as you optimize.* ([Unity Documentation][3])
+    *These settings avoid common mobile bottlenecks; adjust as you optimize.*   
 
 > **Optional:** Enable **Foveated Rendering** (XR Plug-in Management → provider settings) once you’re stable—good free perf; slight peripheral blur. ([Unity Documentation][6])
 
@@ -118,16 +118,16 @@ Find your **URP Asset** (Project search: `*UniversalRenderPipelineAsset*`) and *
 ## 🔎 Quick verification (2 minutes)
 
 * **Build Settings** shows **Android**, **ASTC**.
-* **XR Plug-in Management → Android** shows **OpenXR** checked; **Meta/Quest features** enabled. ([Unity Documentation][5])
-* **Meta XR Project Setup Tool** reports **No issues** after **Fix All**. ([Meta for Developers][2])
-* **URP Asset** set with **HDR Off**, **MSAA 4×**, **no postFX**. ([Unity Documentation][3])
+* **XR Plug-in Management → Android** shows **OpenXR** checked; **Meta/Quest features** enabled.   
+* **Meta XR Project Setup Tool** reports **No issues** after **Fix All**.   
+* **URP Asset** set with **HDR Off**, **MSAA 4×**, **no postFX**.   
 * Scene saved as **01_VR_TicTacToe.unity** with **Ground** and **Directional Light** only (camera removed).
 
 ---
 
 ## 🧩 Notes & Hints (for Students)
 
-* **If you see OpenXR warnings**: reopen **Project Setup Tool → Fix All** and confirm the **Meta OpenXR** feature is enabled. ([Meta for Developers][2])
+* **If you see OpenXR warnings**: reopen **Project Setup Tool → Fix All** and confirm the **Meta OpenXR** feature is enabled.   
 * **If the scene is pink** after imports: **Edit → Render Pipeline → URP → Upgrade Project Materials to URP** (only once).
 * **Don’t add XR rigs yet**—that’s Part 2; today is “golden project” setup.
 
@@ -160,9 +160,9 @@ Assets/
 **XR / Graphics configuration summary**
 
 * Android, ASTC • IL2CPP • ARM64 • Vulkan
-* OpenXR **enabled** + **Meta/Quest** feature **ON** ([Unity Documentation][5])
-* Meta XR **Project Setup: Fix All** ✅ ([Meta for Developers][2])
-* URP: HDR Off, MSAA 4×, no postFX (baseline) ([Unity Documentation][3])
+* OpenXR **enabled** + **Meta/Quest** feature **ON**   
+* Meta XR **Project Setup: Fix All** ✅   
+* URP: HDR Off, MSAA 4×, no postFX (baseline)   
 
 ---
 
@@ -598,14 +598,14 @@ Directional Light
 <span style="color:purple;font-weight:bold;">🟣 complete every purple step</span>
 
 **Goal:** A wall with a **World-Space canvas** that your controller rays can hover/click, a **3×3 Grid**, and a **Cell** prefab (TMP Button).
-**Pipeline:** Interaction SDK with **Pointable Canvas Module** (added via the “**Add Ray Interaction to Canvas**” wizard). ([Meta for Developers][1])
+**Pipeline:** Interaction SDK with **Pointable Canvas Module** (added via the “**Add Ray Interaction to Canvas**” wizard).   
 
 ---
 
 ## 0) Pre-flight (must be true from Part 1) <span style="color:purple;">🟣</span>
 
-⬜ **0.1** You have **`PlayerRig`** (OVRCameraRig) with **Controller Ray Interactor** + **Grab Interactor** on both hands. ([Meta for Developers][2])
-⬜ **0.2** Scene has **EventSystem** with **Pointable Canvas Module** (added by the canvas wizard in Part 1). ([Meta for Developers][1])
+⬜ **0.1** You have **`PlayerRig`** (OVRCameraRig) with **Controller Ray Interactor** + **Grab Interactor** on both hands.   
+⬜ **0.2** Scene has **EventSystem** with **Pointable Canvas Module** (added by the canvas wizard in Part 1).   
 ⬜ **0.3** If **TestCanvas** from Part 1 is still in the scene, either **Disable** it or move it aside so it won’t overlap the new board.
 
 ---
@@ -642,9 +642,9 @@ Directional Light
 ### 2A) Run the Interaction SDK canvas wizard (critical)
 
 ⬜ **2.4** **Hierarchy:** 
-Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to Canvas** → click **Fix** (adds **Pointable Canvas Module** on the **EventSystem**) → **Create** (adds any helpers). ([Meta for Developers][1])
+Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to Canvas** → click **Fix** (adds **Pointable Canvas Module** on the **EventSystem**) → **Create** (adds any helpers).   
 
-> This is the **modern** pipeline for ray-cast UI with the Interaction SDK (you don’t add `OVR Input Module` or `OVR Raycaster` for this flow). ([Meta for Developers][3])
+> This is the **modern** pipeline for ray-cast UI with the Interaction SDK (you don’t add `OVR Input Module` or `OVR Raycaster` for this flow). ( [3])
 
 *(Optional)* Set **Layer = UIWorld** on `BoardCanvas` if you plan to separate UI/3D by layers in Part 5.
 
@@ -755,7 +755,7 @@ Right-click **`BoardCanvas`** → **Interaction SDK → Add Ray Interaction to C
 ⬜ **8.1** **Enter Play** (Quest Link/AirLink recommended).
 ⬜ **8.2** Aim the **Right hand** (or either, for now) ray at the cells → you should see **hover** and **press** color changes when squeezing the trigger.
 
-> If hover/press doesn’t work, re-run the **Add Ray Interaction to Canvas** wizard on `BoardCanvas` so the **EventSystem** has the **Pointable Canvas Module** configured correctly. ([Meta for Developers][1])
+> If hover/press doesn’t work, re-run the **Add Ray Interaction to Canvas** wizard on `BoardCanvas` so the **EventSystem** has the **Pointable Canvas Module** configured correctly.   
 
 ---
 
@@ -793,7 +793,7 @@ Directional Light
 ## 10) Troubleshooting (precise checks) <span style="color:purple;">🟣</span>
 
 * **UI won’t hover/click:**
-  – You must run **Interaction SDK → Add Ray Interaction to Canvas** on **this** `BoardCanvas`. That ensures the **EventSystem** has **Pointable Canvas Module** (modern path). ([Meta for Developers][1])
+  – You must run **Interaction SDK → Add Ray Interaction to Canvas** on **this** `BoardCanvas`. That ensures the **EventSystem** has **Pointable Canvas Module** (modern path).   
   – Canvas must be **World Space** and physically reachable by the ray.
 * **Cells tile weirdly / wrong spacing:**
   – On `Grid`, confirm **Grid Layout Group** values: **Fixed Column Count=3**, **Cell (0.22, 0.22)**, **Spacing (0.02, 0.02)**, margins **40**.
