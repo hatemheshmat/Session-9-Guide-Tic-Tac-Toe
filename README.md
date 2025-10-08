@@ -225,7 +225,16 @@ Drop in the OVR rig exactly like you teach it, add **controller rays**, **grab**
 
 * **Hierarchy path:**
   `OVRCameraRig/OVRInteraction/OVRController/LeftController/ControllerInteractors`
-* **Inspector (Add Component):**
+* 3.1 Project (Search): type Controller Ray Interactor (or Ray Interactor if that’s the prefab name in your SDK)
+
+⬜ 3.2 Hierarchy Path: OVRCameraRig/OVRInteraction/OVRController/LeftController/ControllerInteractors
+
+Drag the Controller Ray Interactor prefab into this ControllerInteractors object.
+
+Inspector (on the newly added Controller Ray Interactor):
+
+Max Ray Length = 6
+Hide When No Interactable = ON (if the property is under a “Visuals/ControllerRay” child, select that child and toggle there)
 
   * **Controller Ray Interactor**
 
