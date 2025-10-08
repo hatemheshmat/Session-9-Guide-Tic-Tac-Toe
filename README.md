@@ -165,330 +165,748 @@ Assets/
 * URP: HDR Off, MSAA 4×, no postFX (baseline)   
 
 ---
+---
 
 # Part 2
 
-## Player Rig, Rays, Wall, and World-Space UI (Unity 6.2 • URP • Meta XR AIO • OpenXR)
+## Scene, Rig, Rays, Grab, Teleport, and World-Space UI (OVR path)
 
-### Student Guide — session-ready, step-by-step
-
-**Goal of Part 2:** put a VR rig in the scene, add controller rays (plus grab), build a wall with a world-space Canvas, and make the UI ray-clickable using the Meta Interaction SDK canvas pipeline.
-*(We’ll add Tic-Tac-Toe logic and cell scripts in later parts.)*
+**Goal of Part 2:**
+Drop in the OVR rig exactly like you teach it, add **controller rays**, **grab**, **stick locomotion**, **teleport**, and a **wall canvas** that rays can click—no custom scripts.
 
 ---
 
-## Learning outcomes (today)
+## What you’ll touch (flow)
 
-* Create a **PlayerRig** with **OVRCameraRig**, **CharacterController**, and **SimpleRigLocomotion**.
-* Add **Controller Ray Interactor** and **Grab Interactor** to both hands.
-* Build a **Wall** and attach a **BoardCanvas** (world-space UI).
-* Enable VR UI interactions using **Pointable Canvas Module** + **Pointable Canvas**.
-* Leave the scene clean and organized for the next parts.
+* **Project**: search prefabs
+* **Hierarchy**: place/parent objects
+* **Inspector**: add components & set values
+* **Scene**: position/scale
+* **Play**: quick checks with Link/Air Link
 
----
-
-## Flow map (which window you’ll use at each step)
-
-* **Project**: find prefabs/scripts, create folders and prefabs.
-* **Hierarchy**: create and parent objects to form the rig and board.
-* **Inspector**: add components and set property values.
-* **Scene**: position/scale objects.
-* **Game**: quick play tests with Link/Air Link.
+> Prereqs from Part 1: platform is Android/ASTC, OVR provider enabled, URP baseline applied, new empty scene with **Ground** + **Directional Light**.
 
 ---
 
-## Prereqs (from Part 1)
+## 1) Folders & scene quick prep
 
-* Project on **Android**, **ASTC**, **IL2CPP/ARM64**, **Vulkan**.
-* **OpenXR** enabled with **Meta Quest Support**.
-* **Meta XR Project Setup / Validation** already “Fix All.”
-* **URP** baseline set (HDR off, MSAA 4×, minimal PostFX).
-* Scene saved as **01_VR_TicTacToe.unity** with **Ground** and **Directional Light** only.
+* Create folders: `Assets/Scenes`, `Assets/Prefabs`, `Assets/Materials`, `Assets/Resources`.
+* Save your scene as: `Assets/Scenes/01_Raycast_Objects_UI.unity`.
+* In **Hierarchy**, keep:
 
----
-
-## Step 1 — PlayerRig (Rig + CharacterController + Locomotion)
-
-### A) Create the PlayerRig root
-
-1. **Hierarchy** → **Create Empty** → rename **PlayerRig**.
-2. **Inspector (PlayerRig)** → **Add Component → CharacterController**
-
-   * **Height:** `1.7`
-   * **Radius:** `0.3`
-   * **Center:** `(0, 0.9, 0)`
-   * **Slope Limit:** `45`
-   * **Step Offset:** `0.3`
-3. **Inspector (PlayerRig)** → **Add Component → SimpleRigLocomotion** (we’ll create it now).
-
-### B) SimpleRigLocomotion script (thumbstick move in place)
-
-1. **Project** → `Assets/Scripts` → **Create > C# Script** → **SimpleRigLocomotion.cs**
-2. Paste:
-
-```csharp
-using UnityEngine;
-using UnityEngine.InputSystem;
-
-[RequireComponent(typeof(CharacterController))]
-public class SimpleRigLocomotion : MonoBehaviour
-{
-    public float moveSpeed = 2.0f;
-    public float gravity = -9.81f;
-
-    [Header("Camera Root (OVRCameraRig or XR camera parent)")]
-    public Transform head; // assign to the head/camera transform under the rig
-    private CharacterController _cc;
-    private float _yVel;
-
-    void Awake()
-    {
-        _cc = GetComponent<CharacterController>();
-    }
-
-    void Update()
-    {
-        if (head == null) return;
-
-        // Input System: left stick on any XR controller
-        Vector2 move = Vector2.zero;
-        var gamepad = Gamepad.current;
-        if (gamepad != null) move = gamepad.leftStick.ReadValue();
-
-        // XR Controller bindings (if you use XRI actions, map them here)
-        // For a simple lab, Gamepad.leftStick via Link works fine.
-
-        // Move relative to head's horizontal forward
-        Vector3 fwd = new Vector3(head.forward.x, 0, head.forward.z).normalized;
-        Vector3 right = new Vector3(head.right.x, 0, head.right.z).normalized;
-        Vector3 planar = (fwd * move.y + right * move.x) * moveSpeed;
-
-        // Gravity
-        if (_cc.isGrounded) _yVel = -0.5f;
-        else _yVel += gravity * Time.deltaTime;
-
-        Vector3 motion = planar + Vector3.up * _yVel;
-        _cc.Move(motion * Time.deltaTime);
-    }
-}
-```
-
-*(This gives dependable “flat world” locomotion for labs. In advanced parts you can switch to action-based movement.)*
-
-### C) Add the OVRCameraRig under PlayerRig
-
-1. **Project (Search):** `OVRCameraRig`
-2. **Drag** into **Hierarchy** as a **child of PlayerRig**.
-3. **Set PlayerRig position** to `(0, 0, 0)` so it starts on the **Ground**.
-4. In **OVRCameraRig**, find the head/camera transform (usually under **TrackingSpace**).
-
-   * **Select PlayerRig → SimpleRigLocomotion → head**: **drag the head/camera transform here**.
+  * **Ground** (Plane) at `(0,0,0)`, scaled `(10,1,10)`.
+  * **Directional Light**.
 
 ---
 
-## Step 2 — Left/Right controller interactors (Ray + Grab)
+## 2) Add the rig exactly as you teach it
 
-### A) Create interactor containers per hand
+### A) OVRCameraRig
 
-For both **LeftHandAnchor** and **RightHandAnchor**:
+1. **Project (Search):** `OVRCameraRig` → drag to **Hierarchy (root)**.
 
-1. **Hierarchy Path:**
-   `PlayerRig / OVRCameraRig / TrackingSpace / LeftHandAnchor`
-   → **Create Empty** → rename **ControllerInteractors**.
-   Repeat under **RightHandAnchor**.
+### B) OVRInteraction (child of the rig)
 
-### B) Add interactors to each ControllerInteractors
+2. **Project (Search):** `OVRInteraction` → drag as **child** of `OVRCameraRig`.
 
-Under **LeftHandAnchor/ControllerInteractors**:
+### C) OVRController (child of OVRInteraction)
 
-1. **Add Component → Controller Ray Interactor** (Meta Interaction SDK).
+3. **Project (Search):** `OVRController` → drag **inside** `OVRCameraRig/OVRInteraction`.
 
-   * **Max Ray Length:** `6`
-   * **Hide When No Interactable:** `On`
-2. **Add Component → Grab Interactor** (Meta Interaction SDK).
+   * This adds `LeftController` and `RightController` with **ControllerInteractors** children.
 
-Repeat the same two components under **RightHandAnchor/ControllerInteractors**.
-
-### C) Optional visual line
-
-If available as a separate component:
-
-* **Add Component → Line Visual** to each **Controller Ray Interactor**.
-
-  * **Width:** `0.005` to `0.01`
-  * **Max Distance:** `6`
-
-*(Depending on SDK version, line visuals may be embedded or provided via a child. Use the default visuals in your SDK if present.)*
+> Don’t touch Main Camera—delete it if present. The rig provides the tracked camera.
 
 ---
 
-## Step 3 — Wall and the BoardCanvas (world-space UI)
+## 3) Rays on both hands (exact objects/places)
+
+### Left hand
+
+* **Hierarchy path:**
+  `OVRCameraRig/OVRInteraction/OVRController/LeftController/ControllerInteractors`
+* **Inspector (Add Component):**
+
+  * **Controller Ray Interactor**
+
+    * **Max Ray Length:** `6`
+    * **Hide When No Interactable:** `On`
+  * **Grab Interactor**
+
+### Right hand
+
+* Same path under **RightController** → add the **same two** components with the **same values**.
+
+*(If your SDK version uses a child “Visuals/ControllerRay” for line settings, open it and enable the visual there—no other changes.)*
+
+---
+
+## 4) Locomotion (thumbstick) with zero code
+
+We’ll use the standard movement component that ships with the SDK.
+
+1. Select **OVRCameraRig** (root of the rig), or create an empty **PlayerRig** parent and move OVRCameraRig under it (either is fine—pick your class style).
+2. **Inspector:**
+
+   * **Add Component → Character Controller**
+
+     * **Height:** `1.7`
+     * **Radius:** `0.3`
+     * **Center:** `(0, 0.9, 0)`
+   * **Add Component → SimpleCapsuleWithStickMovement** (or its current equivalent in your SDK)
+
+     * No changes needed; default thumbstick locomotion works out of the box.
+
+> Result: left/right stick (depending on bindings) moves the capsule in flat scenes. Keep your rig above the **Ground** so the capsule is not intersecting.
+
+---
+
+## 5) Teleport (aim arc + areas/anchors)
+
+### A) Add a Teleport Interactor on **each** hand
+
+* **Left ControllerInteractors** → **Add Component → Teleport Interactor**
+
+  * If your SDK exposes a **Teleport Arc Visual**, add it too and it will auto-link or give you a slot to assign.
+* **Right ControllerInteractors** → repeat the same.
+
+> You can choose which hand does teleport vs. ray/selection later with filters—today we enable both for testing.
+
+### B) Make the scene teleportable
+
+* **Ground** (or any floor mesh you want to allow teleport onto):
+
+  * **Add Component → Teleport Area**
+
+    * Optional: set **Valid/Invalid** visual materials if the component exposes them.
+* Optional anchors (specific points):
+
+  * Create empties where you want, name them `TeleportAnchor_*`, add **Teleport Anchor** and place them on platforms, pads, etc.
+
+### C) Typical input (for playtest)
+
+* Aim arc shows while holding your teleport activation (thumbstick press or button per your default mapping).
+* Release to teleport.
+* If the arc doesn’t show, check the Teleport Interactor’s activation settings and that the **Teleport Area** exists on the target surface.
+
+---
+
+## 6) First 3D target (ray-grab demo cube)
+
+1. **Hierarchy:** **3D Object → Cube** → rename **RayObject**
+
+   * **Transform:** **Scale** `(0.2,0.2,0.2)`, **Position** `(0,0.5,2)`
+2. **Inspector (RayObject):**
+
+   * **Add Component → Rigidbody** (Use Gravity = On, Interpolate = Interpolate)
+   * **Add Component → ColliderSurface** (if separate) → set **Collider** to its BoxCollider
+   * **Add Component → Grabbable** → drag its **Rigidbody** into the slot
+   * **Add Component → RayInteractable**
+
+     * Set **Pointable Element = Grabbable**
+     * Set **Surface = ColliderSurface**
+   * **Add Component → MoveTowardsTargetProvider** (or **MoveFromTargetProvider**)
+
+     * In **RayInteractable → Movement Provider**: assign the provider you added
+
+**Wizard shortcut:**
+Right-click **RayObject** → **Interaction SDK → Add Ray Grab Interaction**
+
+* This creates a parent like **`ISDK Ray Grab Interaction`** and moves the cube as its child.
+* Configure the **parent** (that’s where most interaction components live).
+
+---
+
+## 7) Wall + world-space Canvas (UI the rays can click)
 
 ### A) Wall
 
-1. **Hierarchy** → **3D Object → Cube** → rename **Wall**
+* **3D Object → Cube** → rename **Wall**
 
-   * **Position:** `(0, 1.5, 2.5)`
-   * **Scale:** `(3, 2, 0.1)`
-     *(A large, flat surface to mount the board.)*
+  * **Position:** `(0,1.5,2.5)`
+  * **Scale:** `(3,2,0.1)`
 
-### B) BoardCanvas (world-space)
+### B) Canvas on the wall
 
-1. **Hierarchy (right-click Wall)** → **UI → Canvas** → rename **BoardCanvas**
-2. **Inspector (BoardCanvas → Canvas):**
+* Right-click **Wall** → **UI → Canvas** → rename **BoardCanvas**
 
-   * **Render Mode:** `World Space`
-   * **RectTransform Size:** `800 × 800`
-   * **Position:** local `(0, 0, 0.06)` *(a few cm in front of the wall)*
-   * **Scale:** `(0.001, 0.001, 0.001)` *(crisp UI in VR)*
+  * **Canvas Render Mode:** `World Space`
+  * **Rect:** size `800 × 800`
+  * **Local Position:** `(0,0,0.06)` (a few cm off the wall)
+  * **Scale:** `(0.001,0.001,0.001)`
 
-### C) EventSystem + Meta canvas pipeline
+### C) Make the UI ray-clickable
 
-1. If there’s no **EventSystem** in the scene: **UI → EventSystem** (auto-created).
-2. **Select EventSystem** → **Add Component → Pointable Canvas Module**.
-   *(This routes controller rays to UI; keep only one UI module active.)*
-3. **Select BoardCanvas** → **Add Component → Pointable Canvas**.
+* If the scene **doesn’t** have one, create **EventSystem** (any UI object will prompt it).
+* **EventSystem** → **Add Component → Pointable Canvas Module** (keep only one input module active).
+* **BoardCanvas** → **Add Component → Pointable Canvas** (ensure a **Graphic Raycaster** is also present—UGUI adds it by default).
 
-   * Ensure **Graphic Raycaster** is present (Unity adds it by default to UGUI canvases).
+### D) Grid and placeholders (for Part 3)
 
-### D) Board background
+* Under **BoardCanvas** → **UI → Panel** → rename **BoardPanel** (full stretch; subtle background color).
+* Under **BoardCanvas** → **UI → Panel** → rename **Grid**
 
-1. **Hierarchy (right-click BoardCanvas)** → **UI → Panel** → rename **BoardPanel**
+  * **Rect:** `700 × 700`
+  * **Add Component → Grid Layout Group**
 
-   * **RectTransform:** stretch to `0,0,0,0` (full)
-   * **Image Color:** low-alpha dark or light tint as a background.
+    * **Cell Size:** `220 × 220`
+    * **Spacing:** `20 × 20`
+    * **Constraint:** `Fixed Column Count = 3`
+* Under **Grid** → **UI → Button (TextMeshPro)** → rename **Cell_0**
 
----
+  * Clear the label text (we’ll use sprites later).
+  * Drag **Cell_0** to `Assets/Prefabs` to create **Cell** prefab; delete **Cell_0** from scene; then drag **9** instances into **Grid** and rename **Cell_0 … Cell_8**.
+* Under **BoardCanvas** → **UI → Panel** → rename **GameOverPanel** (disabled for now)
 
-## Step 4 — Grid container and Cell prefab (UI only for now)
-
-### A) Grid container
-
-1. **Hierarchy (right-click BoardCanvas)** → **Create UI → Panel** → rename **Grid**
-2. **Inspector (Grid → RectTransform):**
-
-   * **Anchor/Pivot:** center
-   * **Size:** `700 × 700` *(square)*
-3. **Inspector (Grid)** → **Add Component → Grid Layout Group**
-
-   * **Cell Size:** `220 × 220`
-   * **Spacing:** `20 × 20`
-   * **Constraint:** `Fixed Column Count = 3`
-
-### B) Create the Cell prefab
-
-1. **Hierarchy (right-click Grid)** → **UI → Button (TextMeshPro)** → rename **Cell_0**
-2. **Inspector (Cell_0 Button):**
-
-   * **Transition:** Color Tint (keep defaults; we’ll polish later)
-3. **Child Text (TMP):** clear the text (empty) — we’ll use sprites or TMP later.
-4. **Project:** drag **Cell_0** from Hierarchy to `Assets/Prefabs` to make a **prefab** named **Cell**.
-5. Back in **Hierarchy**, delete **Cell_0**, then **drag the Cell prefab** into **Grid** nine times, renaming:
-
-   * **Cell_0 … Cell_8**
-     *(The Grid Layout Group will auto-tile them into 3×3.)*
-
-### C) GameOver UI (hidden for now)
-
-1. **Hierarchy (right-click BoardCanvas)** → **UI → Panel** → rename **GameOverPanel**
-
-   * **Set Active:** `Off` (disabled)
-   * Place centered over the grid; size ~ `700 × 200`
-2. **Right-click GameOverPanel** → **UI → Text (TextMeshPro)** → rename **GameOverText**
-
-   * **Alignment:** `Center`
-   * **Font Size:** `72`
-   * **Text:** *(leave empty for now)*
-3. **Right-click GameOverPanel** → **UI → Button (TextMeshPro)** → rename **RestartButton**
-
-   * **Text:** `Play again?`
-   * **Font Size:** `48`
-
-*(We’ll wire these in Part 3 when we add the board logic.)*
+  * Add **Text (TMP)** → **GameOverText**
+  * Add **Button (TMP)** → **RestartButton**
 
 ---
 
-## Step 5 — Quick smoke test (editor with Link/Air Link)
+## 8) Quick playtest (in editor with Link/Air Link)
 
-* **Enter Play**: you should see the wall ahead.
-* Point either controller toward the **BoardCanvas**: the **ray** should land on cells and show button hover states.
-* Pull trigger: the button should press visually (no gameplay yet).
-* Move with the thumbstick (SimpleRigLocomotion) to confirm the CharacterController is responding.
-
----
-
-## Notes & Hints (for Students)
-
-* If you don’t see hover/press on the buttons, **EventSystem** probably doesn’t have **Pointable Canvas Module**, or **BoardCanvas** is missing **Pointable Canvas**.
-* If rays seem to go *through* the UI, move **BoardCanvas** a few cm off the wall (we used `+0.06` Z local).
-* If UI is blurry, verify **BoardCanvas scale = 0.001** and the **Grid** area is big enough (we used `700 × 700`).
-* If the player sinks or floats, adjust **CharacterController Height/Center** and place **PlayerRig.y** near `0`.
+* **Rays**: point at **Cell** buttons; hover highlights; click presses.
+* **Grab**: point at **RayObject**, pull trigger to grab, move it, release to drop.
+* **Locomotion**: move using the stick; the capsule glides on the Ground.
+* **Teleport**: hold your teleport activate (thumbstick press or assigned button), see the **arc**, release over **Ground** to teleport.
 
 ---
 
-## Instructor Tips
+## Troubleshooting (fast checks)
 
-* Have students **collapse** and **name** interactor containers exactly as shown; consistency prevents wiring mistakes later.
-* If some students still have the old Input Module on the EventSystem, ask them to remove it and keep **only** the **Pointable Canvas Module** to avoid double input.
-* Keep the interactor defaults; we’ll layer in filters and tags in a later part.
+* **No ray** → On each controller’s **ControllerInteractors**, confirm **Controller Ray Interactor** is present and not disabled.
+* **UI doesn’t click** → Ensure **EventSystem** has **Pointable Canvas Module**, and **BoardCanvas** has **Pointable Canvas** (and a **Graphic Raycaster**). Canvas scale ≈ `0.001`.
+* **Can’t grab cube** → On the **host** (wizard parent or cube itself), confirm **RayInteractable + Grabbable + ColliderSurface + MovementProvider** are present and wired.
+* **Teleport arc won’t show** → Make sure **Teleport Interactor** is on the hand, and **Ground** has **Teleport Area**. Check the interactor’s activation setting.
+* **Stick movement not working** → Confirm **Character Controller** + **SimpleCapsuleWithStickMovement** are on the rig root (or your PlayerRig parent), and the capsule isn’t intersecting the Ground.
 
 ---
 
-## End-of-Part Snapshot
+## End-of-Part snapshot (what you must have now)
 
-### What your Hierarchy should look like now
+### What your **Hierarchy** should look like now
 
 ```
-PlayerRig  (OVRCameraRig + CharacterController + SimpleRigLocomotion)
-└─ OVRCameraRig
-   └─ TrackingSpace
-      ├─ LeftHandAnchor
-      │  └─ ControllerInteractors
-      │     ├─ Controller Ray Interactor
-      │     └─ Grab Interactor
-      └─ RightHandAnchor
-         └─ ControllerInteractors
-            ├─ Controller Ray Interactor
-            └─ Grab Interactor
+OVRCameraRig (or PlayerRig with OVRCameraRig inside)
+└─ OVRInteraction
+└─ OVRController
+   ├─ LeftController
+   │  └─ ControllerInteractors
+   │     ├─ Controller Ray Interactor
+   │     ├─ Grab Interactor
+   │     └─ Teleport Interactor (with Arc Visual if separate)
+   └─ RightController
+      └─ ControllerInteractors
+         ├─ Controller Ray Interactor
+         ├─ Grab Interactor
+         └─ Teleport Interactor (with Arc Visual if separate)
 
 Wall
-└─ BoardCanvas  (World Space; EventSystem has Pointable Canvas Module)
+└─ BoardCanvas (World Space; EventSystem has Pointable Canvas Module)
    ├─ BoardPanel (stretched background)
    ├─ Grid (Grid Layout Group: 3 cols, cell 0.22, spacing 0.02)
    │  ├─ Cell_0 (Prefab instance)
-   │  ├─ Cell_1
-   │  ├─ Cell_2
-   │  ├─ Cell_3
-   │  ├─ Cell_4
-   │  ├─ Cell_5
-   │  ├─ Cell_6
-   │  ├─ Cell_7
-   │  └─ Cell_8
+   │  └─ … Cell_8
    └─ GameOverPanel (disabled)
       ├─ GameOverText (TMP)
       └─ RestartButton (TMP Button)
 
+RayObject (cube)  ← if you did the 3D grab demo
 EventSystem (with Pointable Canvas Module)
-Ground
+Ground (with Teleport Area)
 Directional Light
 ```
 
-### Key Inspector settings (quick recap)
+### Key **Inspector** values (recap)
 
-* **PlayerRig → CharacterController:** Height `1.7`, Radius `0.3`, Center `y=0.9`.
-* **PlayerRig → SimpleRigLocomotion:** head = camera transform under the rig.
-* **Controller Ray Interactor:** Max Ray Length `6`, Hide When No Interactable `On`.
-* **BoardCanvas:** World Space, Size `800×800`, Scale `0.001`, Z offset `0.06`.
-* **EventSystem:** has **Pointable Canvas Module** (only).
-* **BoardCanvas:** has **Pointable Canvas** (+ default **Graphic Raycaster**).
-* **Grid:** Grid Layout Group (Cell `220×220`, Spacing `20×20`, Columns `3`).
+* **Controller Ray Interactor:** Max `6`, Hide When No Interactable `On`.
+* **Grab Interactor:** defaults are fine.
+* **Teleport Interactor:** defaults are fine; add Arc Visual if separate.
+* **Ground:** has **Teleport Area**.
+* **OVRCameraRig (root):** **Character Controller** (Height `1.7`, Radius `0.3`, Center `0,0.9,0`) + **SimpleCapsuleWithStickMovement**.
+* **BoardCanvas:** World Space, size `800×800`, scale `0.001`, offset `+0.06` on Z; Canvas has **Pointable Canvas**; scene **EventSystem** has **Pointable Canvas Module**.
+* **Grid:** cell `220×220`, spacing `20×20`, columns `3`.
+
+---
+# Part 3
+
+## Tic-Tac-Toe Board Logic & UI Wiring (OVR path • Unity 6.2 • URP)
+
+**Goal of Part 3:** make the wall board fully playable with rays: click cells → place **X/O**, detect **win/draw**, show **GameOver** UI, **Restart**.
+
+> Prereqs from Part 2: you already have **OVRCameraRig + rays + grab + locomotion + teleport**, and a **Wall/BoardCanvas** with **Grid** containing 9 **Cell** (prefab instances), plus a hidden **GameOverPanel** (with **GameOverText** and **RestartButton**).
 
 ---
 
-### Next (Part 3)
+## What you’ll touch (flow)
 
-We’ll add the **ScriptableObject-based** Tic-Tac-Toe logic (`Cell`, `UICellBehaviour`, `BoardManager`, `TurnManager`, `UIBehaviour`), wire the nine cells, and make **Restart** and **GameOver** work.
+* **Project**: create scripts, ScriptableObjects, and sprites
+* **Hierarchy**: add managers
+* **Inspector**: assign references (cells list, UI fields, button events)
+* **Play**: verify turns, win/draw, restart
 
+---
+
+## 1) Assets prep (sprites + folders)
+
+1. **Project** → create folders:
+   `Assets/Scripts/Gameplay`, `Assets/Scripts/UI`, `Assets/Resources`, `Assets/Prefabs/Cells`
+
+2. **Sprites (Resources):** add three square images to `Assets/Resources`
+
+   * `x.png` (X icon)
+   * `o.png` (O icon)
+   * `b.png` (blank)
+     **Import settings (each):** Texture Type = **Sprite (2D and UI)**, Mesh Type = **Full Rect**, Mip Maps **Off**.
+
+---
+
+## 2) Create the Cell ScriptableObject (data for each grid cell)
+
+**Project** → `Assets/Scripts/Gameplay` → **Create > C# Script** → **Cell.cs**, paste:
+
+```csharp
+using System;
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "Cell", menuName = "TicTacToe/Cell")]
+public class Cell : ScriptableObject
+{
+    public int Id;                // 0..8
+    public int Value;             // 0=blank, 1=X, 2=O
+    public bool IsInteractive { get; private set; } = true;
+
+    public event Action<int, int> OnValueChanged; // (cellId, value)
+    public event Action<bool> OnGameFinished;     // mark visuals win/lose
+
+    public void SetValue(int newValue)
+    {
+        Value = newValue;
+        OnValueChanged?.Invoke(Id, Value);
+    }
+
+    public void SetResult(bool isWin)
+    {
+        OnGameFinished?.Invoke(isWin);
+        IsInteractive = false;
+    }
+
+    public void Reset()
+    {
+        IsInteractive = true;
+        SetValue(0);
+    }
+}
+```
+
+**Create 9 instances:**
+Right-click in **Project** → **Create → TicTacToe → Cell** → name them `Cell_0` … `Cell_8`.
+Set **Id** on each to match the number.
+
+---
+
+## 3) UICellBehaviour (click handling + icon swap)
+
+**Project** → `Assets/Scripts/UI` → **Create > C# Script** → **UICellBehaviour.cs**, paste:
+
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+
+public class UICellBehaviour : MonoBehaviour
+{
+    [Header("Data")]
+    [SerializeField] private Cell cell;
+
+    [Header("UI")]
+    [SerializeField] private Button button;
+    [SerializeField] private Image image;
+    [SerializeField] private Color defaultColor = Color.white;
+    [SerializeField] private Color winColor = new Color(0.3f, 1f, 0.3f);
+    [SerializeField] private Color failedColor = new Color(1f, 0.3f, 0.3f);
+
+    private Sprite _x; private Sprite _o; private Sprite _blank;
+
+    void Awake()
+    {
+        _x = Resources.Load<Sprite>("x");
+        _o = Resources.Load<Sprite>("o");
+        _blank = Resources.Load<Sprite>("b");
+    }
+
+    void Start()
+    {
+        button.onClick.AddListener(OnButtonClick);
+        ApplyValue(cell.Value); // in case of serialized state
+    }
+
+    void OnEnable()
+    {
+        cell.OnValueChanged += OnValueChanged;
+        cell.OnGameFinished += OnGameFinished;
+    }
+
+    void OnDisable()
+    {
+        cell.OnValueChanged -= OnValueChanged;
+        cell.OnGameFinished -= OnGameFinished;
+    }
+
+    void OnButtonClick()
+    {
+        if (!cell.IsInteractive) return;
+        if (cell.Value != 0) return;
+
+        bool isXTurn = TurnManager.Instance.GetTurn();
+        cell.SetValue(isXTurn ? 1 : 2);   // triggers OnValueChanged
+    }
+
+    void OnValueChanged(int cellId, int newValue) => ApplyValue(newValue);
+
+    void ApplyValue(int v)
+    {
+        if (v == 0)
+        {
+            image.sprite = _blank;
+            image.color = defaultColor;
+            button.interactable = true;
+        }
+        else
+        {
+            image.sprite = (v == 1) ? _x : _o;
+            button.interactable = false;  // locked after play
+        }
+    }
+
+    void OnGameFinished(bool isWin)
+    {
+        image.color = isWin ? winColor : failedColor;
+        button.interactable = false;
+    }
+
+    // Helper for prefab setup in Inspector
+    public void Inject(Cell c, Button b, Image i)
+    {
+        cell = c; button = b; image = i;
+    }
+}
+```
+
+**Attach to the Cell prefab** (not the instances yet):
+
+1. **Project** → open **Cell** prefab.
+2. Add **UICellBehaviour**; drag the prefab’s **Button** into **button**, the child **Image** into **image**.
+3. Set colors if you like.
+4. **Apply** prefab changes (Overrides → Apply All).
+
+---
+
+## 4) TurnManager (singleton that flips X → O → X …)
+
+### A) Base singleton (one-time utility)
+
+**Project** → `Assets/Scripts/Gameplay` → **Create > C# Script** → **PersistentMonoSingleton.cs**, paste:
+
+```csharp
+using UnityEngine;
+
+public abstract class PersistentMonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
+{
+    public static T Instance { get; private set; }
+
+    protected virtual void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this as T;
+        DontDestroyOnLoad(gameObject);
+        Initialize();
+    }
+
+    protected virtual void OnDestroy() { if (Instance == this) Instance = null; }
+    protected abstract void Initialize();
+}
+```
+
+### B) TurnManager
+
+**Project** → `Assets/Scripts/Gameplay` → **Create > C# Script** → **TurnManager.cs**, paste:
+
+```csharp
+using UnityEngine;
+
+public class TurnManager : PersistentMonoSingleton<TurnManager>
+{
+    private bool _xTurn;
+
+    protected override void Initialize() { _xTurn = true; } // X starts
+
+    public bool GetTurn()
+    {
+        bool current = _xTurn;
+        _xTurn = !_xTurn;  // flip for next click
+        return current;
+    }
+
+    public void ResetTurns() => _xTurn = true;
+}
+```
+
+**Hierarchy** → **Create Empty** → **TurnManager** → add **TurnManager** component (it will persist).
+
+---
+
+## 5) BoardManager (win/draw detection + reset)
+
+**Project** → `Assets/Scripts/Gameplay` → **Create > C# Script** → **BoardManager.cs**, paste:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BoardManager : PersistentMonoSingleton<BoardManager>
+{
+    public event Action<int, bool> OnGameFinished; // (winnerValue, isWin)
+    public event Action OnReset;
+
+    [SerializeField] private List<Cell> cellsList = new(); // assign 9 in Inspector
+
+    private readonly int[][] winConditions = new int[][]
+    {
+        new[]{0,1,2}, new[]{3,4,5}, new[]{6,7,8}, // rows
+        new[]{0,3,6}, new[]{1,4,7}, new[]{2,5,8}, // cols
+        new[]{0,4,8}, new[]{2,4,6}                 // diags
+    };
+
+    protected override void Initialize() { }
+
+    void Start() => ResetGame();
+
+    void OnEnable()
+    {
+        foreach (var c in cellsList) c.OnValueChanged += CheckWinCondition;
+    }
+
+    void OnDisable()
+    {
+        foreach (var c in cellsList) c.OnValueChanged -= CheckWinCondition;
+    }
+
+    void CheckWinCondition(int cellId, int value)
+    {
+        if (value == 0) return;
+
+        foreach (var w in winConditions)
+        {
+            if (cellsList[w[0]].Value == value &&
+                cellsList[w[1]].Value == value &&
+                cellsList[w[2]].Value == value)
+            {
+                // mark winners and non-winners
+                cellsList[w[0]].SetResult(true);
+                cellsList[w[1]].SetResult(true);
+                cellsList[w[2]].SetResult(true);
+
+                for (int i = 0; i < cellsList.Count; i++)
+                    if (i != w[0] && i != w[1] && i != w[2])
+                        cellsList[i].SetResult(false);
+
+                OnGameFinished?.Invoke(value, true);
+                return;
+            }
+        }
+
+        // draw?
+        bool allFilled = true;
+        foreach (var c in cellsList) if (c.Value == 0) { allFilled = false; break; }
+        if (allFilled)
+        {
+            foreach (var c in cellsList) c.SetResult(false);
+            OnGameFinished?.Invoke(0, false);
+        }
+    }
+
+    public void ResetGame()
+    {
+        foreach (var c in cellsList) c.Reset();
+        TurnManager.Instance.ResetTurns();
+        OnReset?.Invoke();
+    }
+}
+```
+
+**Hierarchy** → **Create Empty** → **BoardManager** → add **BoardManager** component.
+In **Inspector (BoardManager)**, expand **cellsList** to **9** and **drag the 9 Cell assets** (`Cell_0` … `Cell_8`) in order.
+
+---
+
+## 6) UIBehaviour (status text + restart button)
+
+**Project** → `Assets/Scripts/UI` → **Create > C# Script** → **UIBehaviour.cs**, paste:
+
+```csharp
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class UIBehaviour : MonoBehaviour
+{
+    [SerializeField] private TextMeshProUGUI gameStatusText;
+    [SerializeField] private Button restartButton;
+    [SerializeField] private GameObject containerPanel; // GameOverPanel
+
+    void OnEnable()
+    {
+        BoardManager.Instance.OnGameFinished += HandleGameFinished;
+        BoardManager.Instance.OnReset += ResetUI;
+    }
+
+    void OnDisable()
+    {
+        if (BoardManager.Instance != null)
+        {
+            BoardManager.Instance.OnGameFinished -= HandleGameFinished;
+            BoardManager.Instance.OnReset -= ResetUI;
+        }
+    }
+
+    void Start()
+    {
+        restartButton.onClick.AddListener(RestartGame);
+        ResetUI();
+    }
+
+    void HandleGameFinished(int value, bool isWin)
+    {
+        if (isWin)
+        {
+            string winner = value == 1 ? "X" : "O";
+            gameStatusText.text = $"{winner} Player Wins!";
+        }
+        else
+        {
+            gameStatusText.text = "It's a Draw! Try Again.";
+        }
+        containerPanel.SetActive(true);
+    }
+
+    void ResetUI()
+    {
+        gameStatusText.text = "";
+        containerPanel.SetActive(false);
+    }
+
+    void RestartGame() => BoardManager.Instance.ResetGame();
+}
+```
+
+**Hierarchy wiring:**
+
+* Select **BoardCanvas/GameOverPanel** → ensure it is **inactive** by default.
+* Add **UIBehaviour** to **BoardCanvas** (or to **GameOverPanel**, your choice).
+* **Assign fields:**
+
+  * **containerPanel** = `GameOverPanel`
+  * **gameStatusText** = `GameOverPanel/GameOverText` (TMP)
+  * **restartButton** = `GameOverPanel/RestartButton`
+* **OnClick** of `RestartButton` is **already** set via script listener; no extra click event needed.
+
+---
+
+## 7) Wire each Cell instance to a Cell asset
+
+For **each** `Grid/Cell_0 … Cell_8` (prefab instances in the scene):
+
+* Select the **Cell** instance → in **Inspector (UICellBehaviour)**:
+
+  * **cell** = drag the matching **Cell asset** (`Cell_0` → `Cell_0` asset, etc.).
+  * **button** = its own **Button** component
+  * **image** = its child **Image** component
+  * Set **default / win / failed** colors if you want class-specific colors.
+
+*(If any field is missing on multiple instances, open the **Cell prefab** and set defaults there, then **Apply**; only the **cell** reference must be unique per instance.)*
+
+---
+
+## 8) Playtest (exact checks)
+
+* Point a controller **ray** at a cell → hover highlight.
+* Click a cell → **X** appears, next click places **O**, and so on.
+* Make a 3-in-a-row → the 3 winning cells tint **win color**, others tint **failed color**; **GameOverPanel** appears with the message.
+* Click **Play again?** → board clears to blanks; **X** starts again.
+
+---
+
+## Troubleshooting
+
+* **Cell never shows X/O** → On the cell instance, ensure **UICellBehaviour** has **button** and **image** assigned, and the **cell** field points to its unique **Cell asset**.
+* **Multiple clicks on one cell** → Ensure **UICellBehaviour** sets **button.interactable = false** on value set (already in code).
+* **Win never triggers** → Confirm **BoardManager** has exactly **9** Cell assets in **cellsList**, **ordered** `Cell_0 … Cell_8`.
+* **Restart does nothing** → Make sure **UIBehaviour** is in the scene and its references are set; BoardManager and TurnManager must exist.
+* **UI doesn’t click** → Confirm **EventSystem** has **Pointable Canvas Module** and **BoardCanvas** has **Pointable Canvas**; Canvas scale `0.001`.
+
+---
+
+## End-of-Part snapshot
+
+### What your **Hierarchy** should look like now
+
+```
+OVRCameraRig (OVR path; with rays, grab, teleport from Part 2)
+└─ OVRInteraction
+└─ OVRController
+   ├─ LeftController
+   │  └─ ControllerInteractors
+   │     ├─ Controller Ray Interactor
+   │     ├─ Grab Interactor
+   │     └─ Teleport Interactor
+   └─ RightController
+      └─ ControllerInteractors
+         ├─ Controller Ray Interactor
+         ├─ Grab Interactor
+         └─ Teleport Interactor
+
+Wall
+└─ BoardCanvas (World Space; EventSystem has Pointable Canvas Module)
+   ├─ BoardPanel
+   ├─ Grid (Grid Layout Group)
+   │  ├─ Cell_0 (Prefab instance; UICellBehaviour → cell = Cell_0 asset)
+   │  └─ … Cell_8 (each bound to its own Cell_X asset)
+   └─ GameOverPanel (disabled at start)
+      ├─ GameOverText (TMP)
+      └─ RestartButton (TMP Button)
+
+BoardManager (component; cellsList has 9 Cell assets in order)
+TurnManager  (component; persistent)
+EventSystem  (Pointable Canvas Module)
+Ground (Teleport Area)
+Directional Light
+```
+
+### What your **Project** should include now
+
+```
+Assets/
+  Prefabs/
+    Cells/
+      Cell.prefab
+  Resources/
+    x.png
+    o.png
+    b.png
+  Scenes/
+    01_VR_TicTacToe.unity
+  Scripts/
+    Gameplay/
+      Cell.cs
+      PersistentMonoSingleton.cs
+      TurnManager.cs
+      BoardManager.cs
+    UI/
+      UICellBehaviour.cs
+      UIBehaviour.cs
+```
+---
 
 
 
