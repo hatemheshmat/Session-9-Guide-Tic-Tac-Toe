@@ -127,16 +127,9 @@ Find your **URP Asset** (Project search: `*UniversalRenderPipelineAsset*`) and *
 
 ## 🧩 Notes & Hints (for Students)
 
-* **If UI looks blurry** later: your world-space Canvas scale should be around **0.001**; we’ll cover crisp UI sizing in Part 2 when we add the wall canvas.
 * **If you see OpenXR warnings**: reopen **Project Setup Tool → Fix All** and confirm the **Meta OpenXR** feature is enabled. ([Meta for Developers][2])
 * **If the scene is pink** after imports: **Edit → Render Pipeline → URP → Upgrade Project Materials to URP** (only once).
 * **Don’t add XR rigs yet**—that’s Part 2; today is “golden project” setup.
-
-## 🧑‍🏫 Instructor Tips
-
-* Keep the class *on the same provider*: **OpenXR** (not Oculus XR) for Unity 6.2. A few students may have old templates—have them disable the legacy provider to prevent conflicts. ([Meta for Developers][1])
-* Have students **screenshot** their **XR Plug-in Management** and **Project Setup** “all green” screens for quick TA checks. ([Meta for Developers][2])
-* If time permits, briefly show **Foveated Rendering** toggle but keep it **OFF** until Part 5 to reduce variables. ([Unity Documentation][6])
 
 ---
 
