@@ -1,7 +1,7 @@
 # Session-9-Guide-Tic-Tac-Toe
 
 ---
-# Session 9 — Part 1/6
+# Part 1
 
 ## Unity 6.2 • URP • Meta XR All-in-One (v78+) • OpenXR • Quest 2/3
 
