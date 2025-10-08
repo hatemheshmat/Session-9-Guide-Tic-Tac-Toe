@@ -1,6 +1,232 @@
 # Session-9-Guide-Tic-Tac-Toe
 
 ---
+# Session 9 — Part 1/6
+
+## Unity 6.2 • URP • Meta XR All-in-One (v78+) • OpenXR • Quest 2/3
+
+### Student & Educator Guide (session-ready, step-by-step)
+
+**Goal of Part 1:** create a clean, *production-ready* Unity project configured for Quest (Android) using **OpenXR** + **Meta XR All-in-One SDK**, apply performance-safe URP defaults, and scaffold the scene/folders we’ll build on in Parts 2–6.
+(We’ll add the **PlayerRig**, rays, wall UI, and logic in later parts.)
+
+---
+---
+
+## 🧭 Flow map (what window you’ll use each step)
+
+* **Unity Hub** → create project
+* **Build Settings / Project Settings** → Android, Player, XR, Graphics
+* **Package Manager** → install OpenXR + Meta XR All-in-One
+* **Meta XR Project Setup Tool** → Fix All
+* **URP Asset & Renderer** → performance defaults
+* **Project/Hierarchy** → folders, base scene scaffold
+
+---
+
+## ✅ To-Do Checklist (with “why” + exact clicks)
+
+### 1) Create the project (URP)
+
+1. **Unity Hub** → **New → 3D (URP)** → name **`VR_TicTacToe_Lab`** → Create.
+   *URP is the most stable/performant baseline on Quest.* ([Meta for Developers][1])
+
+### 2) Switch platform & compression (Android + ASTC)
+
+1. **File → Build Settings…** → **Android** → **Switch Platform**.
+   *Quest runs Android; do this early to avoid massive reimports later.* ([Meta for Developers][1])
+2. Same dialog → **Texture Compression = ASTC**.
+   *Best quality/memory tradeoff for mobile VR.*
+
+### 3) Player Settings (required for Quest stores)
+
+Open **Edit → Project Settings… → Player → Other Settings**:
+
+* **Company/Product**: set your names (needed for package id).
+* **Package Name**: `com.company.vr_ttt_lab`
+* **Scripting Backend**: **IL2CPP**
+* **Target Architectures**: **ARM64** (only)
+* **Minimum API Level**: **Android 10 (API 29)** or higher
+* **Graphics APIs** (Android): **Vulkan** (remove GLES3 unless you need it)
+  *These match current Quest/Unity requirements and typical store checks.* ([Meta for Developers][1])
+
+### 4) Install XR + Meta packages (OpenXR path)
+
+Open **Window → Package Manager**:
+
+* Install **XR Plug-in Management** (if not installed).
+* Install **OpenXR Plug-in** (Unity).
+* Install **Meta XR All-in-One SDK (AIO)** (UPM).
+  *AIO wraps the latest Meta XR SDKs in one package.* ([Meta for Developers][4])
+
+> **Heads-up for educators:** If students see “Oculus XR Plug-in”, clarify we’re standardizing on **OpenXR** for Unity 6.2; Meta provides **Unity OpenXR: Meta** support and extensions via OpenXR. ([Unity Documentation][5])
+
+### 5) Enable OpenXR + Meta Quest support
+
+Open **Edit → Project Settings… → XR Plug-in Management → Android**:
+
+* **Check “OpenXR”**.
+* Click **OpenXR** (left pane) → in **Features** enable **Meta / Meta Quest Support** (wording can vary by version; look for Meta-branded OpenXR support). ([Unity Documentation][5])
+
+> **Quick verify:** In **Package Manager**, you should also see **“Unity OpenXR: Meta”** (com.unity.xr.meta-openxr) listed/installed or pulled as a dependency. ([Unity Documentation][5])
+
+### 6) Run Meta XR Project Setup / Validation (auto-fix)
+
+1. **Meta XR → Project Setup** (or **Project Settings → Meta XR → Launch Project Setup Tool**).
+2. Press **Fix All** until green.
+   *This tool applies required flags, permissions, input backends, etc., for Meta Quest targets.* ([Meta for Developers][2])
+
+### 7) URP performance baseline (mobile VR-safe)
+
+Find your **URP Asset** (Project search: `*UniversalRenderPipelineAsset*`) and **URP Renderer**:
+
+* **URP Asset:**
+
+  * **HDR = OFF**
+  * **MSAA = 4×**
+  * Shadows modest (e.g., 512 res; distance 20–25m; 2 cascades)
+* **URP Renderer:**
+
+  * **Post-processing = OFF** (we’ll add selectively later)
+  * **Transparent Receive Shadows = OFF**
+  * **Renderer Features** = empty for now
+    *These settings avoid common mobile bottlenecks; adjust as you optimize.* ([Unity Documentation][3])
+
+> **Optional:** Enable **Foveated Rendering** (XR Plug-in Management → provider settings) once you’re stable—good free perf; slight peripheral blur. ([Unity Documentation][6])
+
+### 8) Input handling (sanity)
+
+* **Edit → Project Settings → Player → Active Input Handling = Input System** (or **Both** if you rely on legacy input anywhere).
+  *Meta samples and Interaction SDK are Input-System friendly.*
+
+### 9) Project structure & base scene scaffold
+
+**Folders (Project window):**
+`Assets/Scenes`, `Assets/Scripts`, `Assets/Prefabs`, `Assets/Materials`, `Assets/Resources`, `Assets/Art`
+
+**Scene:**
+
+1. **File → New Scene** → save as **`Assets/Scenes/01_VR_TicTacToe.unity`**
+2. **Hierarchy:** delete **Main Camera** (we’ll spawn the tracked camera from the rig later).
+3. **GameObject → 3D Object → Plane** → rename **`Ground`** → **Scale (10,1,10)**, **Position (0,0,0)**
+4. Keep **Directional Light**; rotate so shadows are readable in VR.
+
+> **What happens (why this now):** This gives us a visually stable space to stand in during headset tests once the rig is added in Part 2. The camera will come from the rig (OpenXR), not Main Camera.
+
+---
+
+## 🔎 Quick verification (2 minutes)
+
+* **Build Settings** shows **Android**, **ASTC**.
+* **XR Plug-in Management → Android** shows **OpenXR** checked; **Meta/Quest features** enabled. ([Unity Documentation][5])
+* **Meta XR Project Setup Tool** reports **No issues** after **Fix All**. ([Meta for Developers][2])
+* **URP Asset** set with **HDR Off**, **MSAA 4×**, **no postFX**. ([Unity Documentation][3])
+* Scene saved as **01_VR_TicTacToe.unity** with **Ground** and **Directional Light** only (camera removed).
+
+---
+
+## 🧩 Notes & Hints (for Students)
+
+* **If UI looks blurry** later: your world-space Canvas scale should be around **0.001**; we’ll cover crisp UI sizing in Part 2 when we add the wall canvas.
+* **If you see OpenXR warnings**: reopen **Project Setup Tool → Fix All** and confirm the **Meta OpenXR** feature is enabled. ([Meta for Developers][2])
+* **If the scene is pink** after imports: **Edit → Render Pipeline → URP → Upgrade Project Materials to URP** (only once).
+* **Don’t add XR rigs yet**—that’s Part 2; today is “golden project” setup.
+
+## 🧑‍🏫 Instructor Tips
+
+* Keep the class *on the same provider*: **OpenXR** (not Oculus XR) for Unity 6.2. A few students may have old templates—have them disable the legacy provider to prevent conflicts. ([Meta for Developers][1])
+* Have students **screenshot** their **XR Plug-in Management** and **Project Setup** “all green” screens for quick TA checks. ([Meta for Developers][2])
+* If time permits, briefly show **Foveated Rendering** toggle but keep it **OFF** until Part 5 to reduce variables. ([Unity Documentation][6])
+
+---
+
+## 📦 End-of-Part snapshot
+
+(We’ll add the rig/wall/grid next part. For now—clean base.)
+
+**What your Hierarchy should look like now**
+
+```
+Directional Light
+Ground
+```
+
+**What your Project structure should look like now**
+
+```
+Assets/
+  Art/
+  Materials/
+  Prefabs/
+  Resources/
+  Scenes/
+    01_VR_TicTacToe.unity
+  Scripts/
+```
+
+**XR / Graphics configuration summary**
+
+* Android, ASTC • IL2CPP • ARM64 • Vulkan
+* OpenXR **enabled** + **Meta/Quest** feature **ON** ([Unity Documentation][5])
+* Meta XR **Project Setup: Fix All** ✅ ([Meta for Developers][2])
+* URP: HDR Off, MSAA 4×, no postFX (baseline) ([Unity Documentation][3])
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 🔹 Part 1 — Rig & Foundation (Meta Interaction SDK only)
 
