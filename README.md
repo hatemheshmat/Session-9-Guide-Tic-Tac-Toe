@@ -5,7 +5,7 @@
 
 ## Unity 6.2 • URP • Meta XR All-in-One (v78+) • OpenXR • Quest 2/3
 
-### Student & Educator Guide (session-ready, step-by-step)
+### Student Guide (session-ready, step-by-step)
 
 **Goal of Part 1:** create a clean, *production-ready* Unity project configured for Quest (Android) using **OpenXR** + **Meta XR All-in-One SDK**, apply performance-safe URP defaults, and scaffold the scene/folders we’ll build on in Parts 2–6.
 (We’ll add the **PlayerRig**, rays, wall UI, and logic in later parts.)
@@ -166,6 +166,328 @@ Assets/
 
 ---
 
+# Part 2
+
+## Player Rig, Rays, Wall, and World-Space UI (Unity 6.2 • URP • Meta XR AIO • OpenXR)
+
+### Student Guide — session-ready, step-by-step
+
+**Goal of Part 2:** put a VR rig in the scene, add controller rays (plus grab), build a wall with a world-space Canvas, and make the UI ray-clickable using the Meta Interaction SDK canvas pipeline.
+*(We’ll add Tic-Tac-Toe logic and cell scripts in later parts.)*
+
+---
+
+## Learning outcomes (today)
+
+* Create a **PlayerRig** with **OVRCameraRig**, **CharacterController**, and **SimpleRigLocomotion**.
+* Add **Controller Ray Interactor** and **Grab Interactor** to both hands.
+* Build a **Wall** and attach a **BoardCanvas** (world-space UI).
+* Enable VR UI interactions using **Pointable Canvas Module** + **Pointable Canvas**.
+* Leave the scene clean and organized for the next parts.
+
+---
+
+## Flow map (which window you’ll use at each step)
+
+* **Project**: find prefabs/scripts, create folders and prefabs.
+* **Hierarchy**: create and parent objects to form the rig and board.
+* **Inspector**: add components and set property values.
+* **Scene**: position/scale objects.
+* **Game**: quick play tests with Link/Air Link.
+
+---
+
+## Prereqs (from Part 1)
+
+* Project on **Android**, **ASTC**, **IL2CPP/ARM64**, **Vulkan**.
+* **OpenXR** enabled with **Meta Quest Support**.
+* **Meta XR Project Setup / Validation** already “Fix All.”
+* **URP** baseline set (HDR off, MSAA 4×, minimal PostFX).
+* Scene saved as **01_VR_TicTacToe.unity** with **Ground** and **Directional Light** only.
+
+---
+
+## Step 1 — PlayerRig (Rig + CharacterController + Locomotion)
+
+### A) Create the PlayerRig root
+
+1. **Hierarchy** → **Create Empty** → rename **PlayerRig**.
+2. **Inspector (PlayerRig)** → **Add Component → CharacterController**
+
+   * **Height:** `1.7`
+   * **Radius:** `0.3`
+   * **Center:** `(0, 0.9, 0)`
+   * **Slope Limit:** `45`
+   * **Step Offset:** `0.3`
+3. **Inspector (PlayerRig)** → **Add Component → SimpleRigLocomotion** (we’ll create it now).
+
+### B) SimpleRigLocomotion script (thumbstick move in place)
+
+1. **Project** → `Assets/Scripts` → **Create > C# Script** → **SimpleRigLocomotion.cs**
+2. Paste:
+
+```csharp
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+[RequireComponent(typeof(CharacterController))]
+public class SimpleRigLocomotion : MonoBehaviour
+{
+    public float moveSpeed = 2.0f;
+    public float gravity = -9.81f;
+
+    [Header("Camera Root (OVRCameraRig or XR camera parent)")]
+    public Transform head; // assign to the head/camera transform under the rig
+    private CharacterController _cc;
+    private float _yVel;
+
+    void Awake()
+    {
+        _cc = GetComponent<CharacterController>();
+    }
+
+    void Update()
+    {
+        if (head == null) return;
+
+        // Input System: left stick on any XR controller
+        Vector2 move = Vector2.zero;
+        var gamepad = Gamepad.current;
+        if (gamepad != null) move = gamepad.leftStick.ReadValue();
+
+        // XR Controller bindings (if you use XRI actions, map them here)
+        // For a simple lab, Gamepad.leftStick via Link works fine.
+
+        // Move relative to head's horizontal forward
+        Vector3 fwd = new Vector3(head.forward.x, 0, head.forward.z).normalized;
+        Vector3 right = new Vector3(head.right.x, 0, head.right.z).normalized;
+        Vector3 planar = (fwd * move.y + right * move.x) * moveSpeed;
+
+        // Gravity
+        if (_cc.isGrounded) _yVel = -0.5f;
+        else _yVel += gravity * Time.deltaTime;
+
+        Vector3 motion = planar + Vector3.up * _yVel;
+        _cc.Move(motion * Time.deltaTime);
+    }
+}
+```
+
+*(This gives dependable “flat world” locomotion for labs. In advanced parts you can switch to action-based movement.)*
+
+### C) Add the OVRCameraRig under PlayerRig
+
+1. **Project (Search):** `OVRCameraRig`
+2. **Drag** into **Hierarchy** as a **child of PlayerRig**.
+3. **Set PlayerRig position** to `(0, 0, 0)` so it starts on the **Ground**.
+4. In **OVRCameraRig**, find the head/camera transform (usually under **TrackingSpace**).
+
+   * **Select PlayerRig → SimpleRigLocomotion → head**: **drag the head/camera transform here**.
+
+---
+
+## Step 2 — Left/Right controller interactors (Ray + Grab)
+
+### A) Create interactor containers per hand
+
+For both **LeftHandAnchor** and **RightHandAnchor**:
+
+1. **Hierarchy Path:**
+   `PlayerRig / OVRCameraRig / TrackingSpace / LeftHandAnchor`
+   → **Create Empty** → rename **ControllerInteractors**.
+   Repeat under **RightHandAnchor**.
+
+### B) Add interactors to each ControllerInteractors
+
+Under **LeftHandAnchor/ControllerInteractors**:
+
+1. **Add Component → Controller Ray Interactor** (Meta Interaction SDK).
+
+   * **Max Ray Length:** `6`
+   * **Hide When No Interactable:** `On`
+2. **Add Component → Grab Interactor** (Meta Interaction SDK).
+
+Repeat the same two components under **RightHandAnchor/ControllerInteractors**.
+
+### C) Optional visual line
+
+If available as a separate component:
+
+* **Add Component → Line Visual** to each **Controller Ray Interactor**.
+
+  * **Width:** `0.005` to `0.01`
+  * **Max Distance:** `6`
+
+*(Depending on SDK version, line visuals may be embedded or provided via a child. Use the default visuals in your SDK if present.)*
+
+---
+
+## Step 3 — Wall and the BoardCanvas (world-space UI)
+
+### A) Wall
+
+1. **Hierarchy** → **3D Object → Cube** → rename **Wall**
+
+   * **Position:** `(0, 1.5, 2.5)`
+   * **Scale:** `(3, 2, 0.1)`
+     *(A large, flat surface to mount the board.)*
+
+### B) BoardCanvas (world-space)
+
+1. **Hierarchy (right-click Wall)** → **UI → Canvas** → rename **BoardCanvas**
+2. **Inspector (BoardCanvas → Canvas):**
+
+   * **Render Mode:** `World Space`
+   * **RectTransform Size:** `800 × 800`
+   * **Position:** local `(0, 0, 0.06)` *(a few cm in front of the wall)*
+   * **Scale:** `(0.001, 0.001, 0.001)` *(crisp UI in VR)*
+
+### C) EventSystem + Meta canvas pipeline
+
+1. If there’s no **EventSystem** in the scene: **UI → EventSystem** (auto-created).
+2. **Select EventSystem** → **Add Component → Pointable Canvas Module**.
+   *(This routes controller rays to UI; keep only one UI module active.)*
+3. **Select BoardCanvas** → **Add Component → Pointable Canvas**.
+
+   * Ensure **Graphic Raycaster** is present (Unity adds it by default to UGUI canvases).
+
+### D) Board background
+
+1. **Hierarchy (right-click BoardCanvas)** → **UI → Panel** → rename **BoardPanel**
+
+   * **RectTransform:** stretch to `0,0,0,0` (full)
+   * **Image Color:** low-alpha dark or light tint as a background.
+
+---
+
+## Step 4 — Grid container and Cell prefab (UI only for now)
+
+### A) Grid container
+
+1. **Hierarchy (right-click BoardCanvas)** → **Create UI → Panel** → rename **Grid**
+2. **Inspector (Grid → RectTransform):**
+
+   * **Anchor/Pivot:** center
+   * **Size:** `700 × 700` *(square)*
+3. **Inspector (Grid)** → **Add Component → Grid Layout Group**
+
+   * **Cell Size:** `220 × 220`
+   * **Spacing:** `20 × 20`
+   * **Constraint:** `Fixed Column Count = 3`
+
+### B) Create the Cell prefab
+
+1. **Hierarchy (right-click Grid)** → **UI → Button (TextMeshPro)** → rename **Cell_0**
+2. **Inspector (Cell_0 Button):**
+
+   * **Transition:** Color Tint (keep defaults; we’ll polish later)
+3. **Child Text (TMP):** clear the text (empty) — we’ll use sprites or TMP later.
+4. **Project:** drag **Cell_0** from Hierarchy to `Assets/Prefabs` to make a **prefab** named **Cell**.
+5. Back in **Hierarchy**, delete **Cell_0**, then **drag the Cell prefab** into **Grid** nine times, renaming:
+
+   * **Cell_0 … Cell_8**
+     *(The Grid Layout Group will auto-tile them into 3×3.)*
+
+### C) GameOver UI (hidden for now)
+
+1. **Hierarchy (right-click BoardCanvas)** → **UI → Panel** → rename **GameOverPanel**
+
+   * **Set Active:** `Off` (disabled)
+   * Place centered over the grid; size ~ `700 × 200`
+2. **Right-click GameOverPanel** → **UI → Text (TextMeshPro)** → rename **GameOverText**
+
+   * **Alignment:** `Center`
+   * **Font Size:** `72`
+   * **Text:** *(leave empty for now)*
+3. **Right-click GameOverPanel** → **UI → Button (TextMeshPro)** → rename **RestartButton**
+
+   * **Text:** `Play again?`
+   * **Font Size:** `48`
+
+*(We’ll wire these in Part 3 when we add the board logic.)*
+
+---
+
+## Step 5 — Quick smoke test (editor with Link/Air Link)
+
+* **Enter Play**: you should see the wall ahead.
+* Point either controller toward the **BoardCanvas**: the **ray** should land on cells and show button hover states.
+* Pull trigger: the button should press visually (no gameplay yet).
+* Move with the thumbstick (SimpleRigLocomotion) to confirm the CharacterController is responding.
+
+---
+
+## Notes & Hints (for Students)
+
+* If you don’t see hover/press on the buttons, **EventSystem** probably doesn’t have **Pointable Canvas Module**, or **BoardCanvas** is missing **Pointable Canvas**.
+* If rays seem to go *through* the UI, move **BoardCanvas** a few cm off the wall (we used `+0.06` Z local).
+* If UI is blurry, verify **BoardCanvas scale = 0.001** and the **Grid** area is big enough (we used `700 × 700`).
+* If the player sinks or floats, adjust **CharacterController Height/Center** and place **PlayerRig.y** near `0`.
+
+---
+
+## Instructor Tips
+
+* Have students **collapse** and **name** interactor containers exactly as shown; consistency prevents wiring mistakes later.
+* If some students still have the old Input Module on the EventSystem, ask them to remove it and keep **only** the **Pointable Canvas Module** to avoid double input.
+* Keep the interactor defaults; we’ll layer in filters and tags in a later part.
+
+---
+
+## End-of-Part Snapshot
+
+### What your Hierarchy should look like now
+
+```
+PlayerRig  (OVRCameraRig + CharacterController + SimpleRigLocomotion)
+└─ OVRCameraRig
+   └─ TrackingSpace
+      ├─ LeftHandAnchor
+      │  └─ ControllerInteractors
+      │     ├─ Controller Ray Interactor
+      │     └─ Grab Interactor
+      └─ RightHandAnchor
+         └─ ControllerInteractors
+            ├─ Controller Ray Interactor
+            └─ Grab Interactor
+
+Wall
+└─ BoardCanvas  (World Space; EventSystem has Pointable Canvas Module)
+   ├─ BoardPanel (stretched background)
+   ├─ Grid (Grid Layout Group: 3 cols, cell 0.22, spacing 0.02)
+   │  ├─ Cell_0 (Prefab instance)
+   │  ├─ Cell_1
+   │  ├─ Cell_2
+   │  ├─ Cell_3
+   │  ├─ Cell_4
+   │  ├─ Cell_5
+   │  ├─ Cell_6
+   │  ├─ Cell_7
+   │  └─ Cell_8
+   └─ GameOverPanel (disabled)
+      ├─ GameOverText (TMP)
+      └─ RestartButton (TMP Button)
+
+EventSystem (with Pointable Canvas Module)
+Ground
+Directional Light
+```
+
+### Key Inspector settings (quick recap)
+
+* **PlayerRig → CharacterController:** Height `1.7`, Radius `0.3`, Center `y=0.9`.
+* **PlayerRig → SimpleRigLocomotion:** head = camera transform under the rig.
+* **Controller Ray Interactor:** Max Ray Length `6`, Hide When No Interactable `On`.
+* **BoardCanvas:** World Space, Size `800×800`, Scale `0.001`, Z offset `0.06`.
+* **EventSystem:** has **Pointable Canvas Module** (only).
+* **BoardCanvas:** has **Pointable Canvas** (+ default **Graphic Raycaster**).
+* **Grid:** Grid Layout Group (Cell `220×220`, Spacing `20×20`, Columns `3`).
+
+---
+
+### Next (Part 3)
+
+We’ll add the **ScriptableObject-based** Tic-Tac-Toe logic (`Cell`, `UICellBehaviour`, `BoardManager`, `TurnManager`, `UIBehaviour`), wire the nine cells, and make **Restart** and **GameOver** work.
 
 
 
@@ -221,7 +543,60 @@ Assets/
 
 
 
-# 🔹 Part 1 — Rig & Foundation (Meta Interaction SDK only)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🔹 Part 1 — Rig & Foundation (Meta Interaction SDK only)
 
 <span style="color:purple;font-weight:bold;">🟣 </span>
 
