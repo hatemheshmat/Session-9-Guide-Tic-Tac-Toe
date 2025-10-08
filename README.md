@@ -907,10 +907,230 @@ Assets/
       UIBehaviour.cs
 ```
 ---
+# Part 4
+## Snap Interaction (Sockets): grab → hover → precision snap
+
+*(Unity 6.2 • URP • Meta XR AIO v65+ • Your OVR rig path from Parts 1–3 stays exactly as is)*
+
+**Goal of Part 4:** add **Snap Interactions** so a movable 3D object (the **Plug**) snaps perfectly into one or more **Sockets** on the **Wall**. Works with your current **rays**, **grabs**, **locomotion**, and **teleport**. No custom code.
+
+---
+
+## What you’ll touch (flow)
+
+* **Hierarchy**: create Plug and Sockets under your existing scene
+* **Inspector**: add **Snap Interactor** (on the Plug) and **Snap Interactable** (on each Socket)
+* **Wizards**: use the Interaction SDK **Add Grab Interaction** once for the Plug
+* **Play**: tune snap pose live, then copy/paste values after exiting Play
+
+---
+
+## 1) Create the two actors
+
+### A) The target on the wall (Socket)
+
+1. **Hierarchy** → select **Wall** (from Part 2).
+2. **Right-click Wall → 3D Object → Cube** → rename **Outlet**.
+
+   * **Transform:** Position `(0.6, 1.3, 2.45)` (a little to the right), Scale `(0.18, 0.18, 0.02)` (thin plate).
+
+### B) The object you will snap (Plug)
+
+1. **Hierarchy** → **3D Object → Cube** → rename **ChargerBrick**.
+
+   * **Transform:** Position `(0, 1.0, 1.2)`, Scale `(0.04, 0.06, 0.025)` (smaller than outlet).
+   * Give it a simple **Material** (optional) so it’s easy to see.
+
+> You can use your own models later; shapes here are just clean placeholders to teach snap wiring.
+
+---
+
+## 2) Make the Plug grabbable (wizard, 10 seconds)
+
+1. **Right-click `ChargerBrick` → Interaction SDK → Add Grab Interaction**.
+2. In the wizard dialog:
+
+   * Keep defaults (hands/controllers both fine).
+   * **Generate Collider = ON**.
+   * Click **Fix All** (adds Rigidbody etc.).
+   * Click **Create**.
+
+**Result:** the wizard creates a parent host like **`ISDK Hand Grab Interaction`** (name may vary). Your **ChargerBrick** mesh becomes its **child**. The **host** now carries the interaction components (Grabbable/GrabInteractable/ColliderSurface). We’ll attach **Snap Interactor** under this host.
+
+---
+
+## 3) Add the Snap Interactor (on the Plug host)
+
+1. **Hierarchy:** select the wizard **host** object (parent of `ChargerBrick`).
+2. **Right-click host → Create Empty** → rename **SnapInteractor** (child of the host).
+3. **Inspector (SnapInteractor)** → **Add Component → Snap Interactor**.
+
+   * **Pointable Element:** drag the **host** (it has the Pointable/Grabbable).
+   * **Rigidbody:** drag the **Rigidbody** from the **host** (or the child if the wizard placed it there).
+   * Leave other defaults for now.
+
+> The Interactor is the “thing that snaps in”.
+
+---
+
+## 4) Add the Snap Interactable (on the Socket)
+
+1. **Hierarchy:** expand **Wall/Outlet**.
+2. **Right-click `Outlet` → Create Empty** → rename **Snap_Outlet_A** (child of Outlet).
+3. **Inspector (Outlet)** → **Add Component → Rigidbody**
+
+   * **Use Gravity = OFF**, **Is Kinematic = ON** (this outlet stays fixed on the wall).
+4. **Inspector (Snap_Outlet_A)** → **Add Component → Box Collider**
+
+   * Resize the Box to match where the plug nose should slide in (a tight box in front of the outlet’s face).
+5. **Inspector (Snap_Outlet_A)** → **Add Component → Snap Interactable**
+
+   * **Rigid Body:** drag **Outlet (Rigidbody)** here.
+   * **Max Selecting Interactors:** `1` (only one plug per socket).
+   * Leave optional visuals empty for now.
+
+> The Interactable is the “hole/seat” that accepts the snap.
+
+---
+
+## 5) Aim the snap pose (live alignment workflow)
+
+1. **Play** with Link/Air Link.
+2. Grab **ChargerBrick** (ray or hand), move near **Snap_Outlet_A** → it should **hover/attract** and **snap**.
+3. If the snap lands misaligned:
+
+   * While still in **Play**, select **`Snap_Outlet_A`** and **move/rotate** its **Transform** until the snapped plug looks perfect.
+   * **Inspector (Transform)** → **⋮** → **Copy Component**.
+   * **Exit Play**, select **`Snap_Outlet_A`** again → **⋮ → Paste Component Values**.
+
+> This “tune in Play, paste after” avoids iteration time and gets pixel-perfect placement.
+
+---
+
+## 6) Add a second socket (multi-snap option)
+
+1. **Hierarchy:** **Duplicate** `Snap_Outlet_A` → rename **Snap_Outlet_B**.
+2. Move it to the other side of the Outlet plate so you have two sockets.
+3. **Play**: the Plug will snap to the **closest** Snap Interactable.
+
+---
+
+## 7) Optional: hover visuals (clear learner feedback)
+
+If your SDK includes a **Snap Interactable Visual**:
+
+1. Select **`Snap_Outlet_A`** (and **B** if you duplicated).
+2. **Add Component → Snap Interactable Visual**.
+
+   * **Snap Interactable:** drag same object.
+   * **Hover Material:** create a **transparent** material (e.g., Standard Surface, Rendering Mode **Transparent**, low alpha).
+   * Assign it so students see a soft ghost where snapping will occur.
+
+---
+
+## Troubleshooting (quick wins)
+
+* **No snapping at all** → Snap Interactor must reference a **Pointable Element** (from the Plug’s wizard host) **and** a **Rigidbody**. The Snap Interactable must also reference a **Rigidbody** (from the Outlet).
+* **Snaps but wrong pose** → Adjust **`Snap_Outlet_A`** Transform during **Play**; copy/paste values after Play.
+* **Multiple plugs fight** → On each **Snap Interactable**, set **Max Selecting Interactors = 1**.
+* **Won’t grab** → Verify the wizard parent exists (host holds Grabbable/GrabInteractable/ColliderSurface) and the Plug mesh has a collider.
+* **Falls or jitters** → For fixed sockets, **Outlet Rigidbody** must be **Kinematic**; for the Plug host, keep the wizard defaults (usually non-gravity while grabbed, then sim).
+* **UI rays interfere** (optional) → Use your Part 6 mask setup (Tag Set Filter) if you want one hand UI-only and the other 3D-only.
+
+---
+
+## End-of-Part snapshot
+
+### What your **Hierarchy** should look like now
+
+```
+OVRCameraRig  (your OVR path from Parts 1–3 + locomotion/teleport)
+└─ OVRInteraction
+└─ OVRController
+   ├─ LeftController
+   │  └─ ControllerInteractors
+   │     ├─ Controller Ray Interactor
+   │     ├─ Grab Interactor
+   │     └─ Teleport Interactor
+   └─ RightController
+      └─ ControllerInteractors
+         ├─ Controller Ray Interactor
+         ├─ Grab Interactor
+         └─ Teleport Interactor
+
+Wall
+├─ BoardCanvas   (from Tic-Tac-Toe)
+│  ├─ BoardPanel
+│  ├─ Grid
+│  │  ├─ Cell_0 … Cell_8
+│  └─ GameOverPanel (disabled)
+└─ Outlet        (Cube + Rigidbody (Kinematic))
+   ├─ Snap_Outlet_A (BoxCollider + Snap Interactable)
+   └─ Snap_Outlet_B (optional duplicate; BoxCollider + Snap Interactable)
+
+ISDK Hand Grab Interaction   (wizard host for the Plug; exact name may vary)
+├─ ChargerBrick              (mesh child; collider from wizard)
+└─ SnapInteractor            (Snap Interactor; refs: host Pointable + host Rigidbody)
+
+EventSystem (Pointable Canvas Module)
+Ground (Teleport Area)
+Directional Light
+```
+
+### Key **Inspector** bindings (recap)
+
+* **SnapInteractor (child under Plug host)**
+
+  * **Pointable Element =** the **wizard host** object
+  * **Rigidbody =** the **wizard host’s Rigidbody**
+* **Snap_Outlet_A / B**
+
+  * **Box Collider** fits socket opening
+  * **Snap Interactable → Rigidbody =** **Outlet (Kinematic)**
+  * **Max Selecting Interactors = 1**
+
+---
+
+### What students should be able to do now
+
+* Grab the **ChargerBrick** with ray or hand.
+* Move near **Snap_Outlet_A/B** → see hover/attract → **release** → object **snaps** perfectly in place.
+* Teleport and locomote around while repeating the interaction.
+
+---
 
 
 
-\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+\
+\
+
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\\\
+\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
 
